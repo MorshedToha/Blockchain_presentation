@@ -276,8 +276,6 @@ svg { flex-shrink: 0; }
 .is-visible .milestone-content { opacity: 1; transform: translateY(0); }
 .milestone-content h3 { font-size: 24px; font-weight: 550; line-height: 1.25; letter-spacing: -.6px; }
 .milestone-content p { font-size: 21px; line-height: 1.45; color: #a7a7b3; margin-top: 12px; }
-.history-controls { position: absolute; left: 64px; bottom: 104px; display: flex; align-items: center; gap: 29px; }
-.history-controls > span { color: #93939e; font-size: 14px; letter-spacing: 1.7px; }
 .block-layout { grid-template-columns: 1fr 1fr; gap: 92px; }
 .block-layout h2 { font-size: 92px; }
 .block-layout .slide-action { margin-top: 35px; }

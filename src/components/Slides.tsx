@@ -188,8 +188,7 @@ function History({ revealed }: ActivityProps) {
   return <div className="slide-inner theme-dark history-slide">
     <Topline chapter="INSIDE THE CHAIN" label="Four moments, not the whole history" />
     <h2 className="wide-heading">NOT AN<br /><span className="text-blue">OVERNIGHT IDEA.</span></h2>
-    <div className="history-timeline">{milestones.map((milestone, i) => <div key={milestone.year} className={`milestone ${i < visible ? 'is-visible' : ''}`}><div className="year">{milestone.year}</div><div className="timeline-line"><span /></div><div className="milestone-content" aria-hidden={i >= visible}><h3>{milestone.title}</h3><p>{milestone.text}</p></div></div>)}</div>
-    <div className="history-controls"><Action onClick={() => setCount(Math.min(4, count + 1))} disabled={visible === 4}>{visible === 4 ? 'Timeline complete' : 'Next milestone'}{visible === 4 ? <Check size={24} /> : <ArrowRight size={24} />}</Action><span>{visible} / 4 MILESTONES</span></div>
+    <div className="history-timeline">{milestones.map((milestone, i) => <div key={milestone.year} className={`milestone ${i < visible ? 'is-visible' : ''}`} onClick={() => setCount((c) => Math.min(4, Math.max(c, i + 1)))} style={{ cursor: i >= visible ? 'pointer' : 'default' }}><div className="year">{milestone.year}</div><div className="timeline-line"><span /></div><div className="milestone-content" aria-hidden={i >= visible}><h3>{milestone.title}</h3><p>{milestone.text}</p></div></div>)}</div>
     <Footline number={5}><span>Sources: original papers, pizza forum & Ethereum launch announcement.</span></Footline>
   </div>;
 }
