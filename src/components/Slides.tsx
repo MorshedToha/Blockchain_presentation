@@ -4,7 +4,7 @@ import {
   Copy, Database, FileCheck2, Fingerprint, KeyRound, Link2,
   Plus, ShieldCheck, X, Zap,
 } from 'lucide-react';
-import { mangoTiming, sources } from '../data/deck';
+import { mangoTiming, sources, tpsBenchmarks } from '../data/deck';
 import { firstRecord, hash, originalHash, secondHash, shortHash, signaturePreview, thirdHash, verifyCredential } from '../utils/crypto';
 import { SlideNavigationProvider, useSlideNavigation, type SlideNavigation, type StepAvailability } from './SlideNavigation';
 
@@ -266,6 +266,11 @@ function Consensus({ revealed }: ActivityProps) {
     <h2 className="wide-heading">WHO ADDS<br /><span className="text-blue">THE NEXT BLOCK?</span></h2>
     <div className="consensus-options"><button className={`consensus-option ${selected === 'work' ? 'selected' : ''}`} aria-pressed={selected === 'work'} onClick={() => setMode('work')}><div className="consensus-label"><span>01</span><Zap size={37} strokeWidth={1.4} /></div><h3>PROOF OF WORK</h3><p>Computing effort + electricity</p><span className="select-process">Explore the process <ArrowUpRight size={24} /></span></button><button className={`consensus-option ${selected === 'stake' ? 'selected' : ''}`} aria-pressed={selected === 'stake'} onClick={() => setMode('stake')}><div className="consensus-label"><span>02</span><ShieldCheck size={37} strokeWidth={1.4} /></div><h3>PROOF OF STAKE</h3><p>Validators + stake at risk</p><span className="select-process">Explore the process <ArrowUpRight size={24} /></span></button></div>
     <div className="consensus-process" aria-live="polite">{selected ? <><div className="process-line">{selected === 'work' ? <><span>Try many hashes</span><ArrowRight /><span>Propose a valid block</span><ArrowRight /><span>Others check</span></> : <><span>Commit stake</span><ArrowRight /><span>Selected validator proposes</span><ArrowRight /><span>Others check</span></>}</div><p>{selected === 'work' ? 'The work uses electricity. A proposal still has to meet the rules.' : 'Penalties depend on network rules; not every error deletes a stake.'}</p></> : <p>Choose a mechanism to see how a block is proposed.</p>}</div>
+    {selected && <div className="consensus-benchmark" aria-live="polite">
+      <div className="benchmark-badge">{selected === 'work' ? 'ENERGY INTENSIVE' : 'EST. ~99.95% POWER DROP'}</div>
+      <p>{selected === 'work' ? 'Bitcoin PoW consumes estimated multi-terawatt-hours of electricity globally for computational hashing.' : 'Ethereum The Merge (Sept 2022) replaced PoW with PoS, documented to reduce power consumption by ~99.95%.'}</p>
+      <Citation id={selected === 'work' ? 'pow' : 'ccri'}>{selected === 'work' ? 'NIST / PoW' : 'CCRI (2022)'}</Citation>
+    </div>}
     <Footline number={8}>Both rely on rules, incentives, and checks. Neither is a guarantee.</Footline>
   </div>;
 }
@@ -409,6 +414,7 @@ function Tradeoffs({ revealed }: ActivityProps) {
 }
 
 function Decision({ revealed }: ActivityProps) {
+  const [view, setView] = useState<'decision' | 'tps'>('decision');
   const [answers, setAnswers] = useState<(boolean | null)[]>([null, null, null]);
   const values = revealed ? [true, true, true] : answers;
   const questions = ['Do multiple parties need to share and verify records?', 'Do they need one shared system?', 'Would a regular database work?'];
@@ -417,16 +423,56 @@ function Decision({ revealed }: ActivityProps) {
   const unanswered = answers.findIndex((value) => value === null);
   const lastAnswered = answers.reduce((last, value, i) => value === null ? last : i, -1);
   useSlideNavigation(
-    revealed || verdict || unanswered === -1 ? null
-      : { label: `Follow the example's Yes path for question ${unanswered + 1}`, run: () => answer(unanswered, true) },
-    !revealed && lastAnswered >= 0
-      ? () => setAnswers((previous) => previous.map((value, i) => i >= lastAnswered ? null : value)) : null,
+    revealed ? null : view === 'tps'
+      ? { label: 'Return to decision path', run: () => setView('decision') }
+      : verdict || unanswered === -1
+        ? { label: 'View throughput (TPS) comparison', run: () => setView('tps') }
+        : { label: `Follow the example's Yes path for question ${unanswered + 1}`, run: () => answer(unanswered, true) },
+    !revealed && view === 'tps'
+      ? () => setView('decision')
+      : !revealed && lastAnswered >= 0
+        ? () => setAnswers((previous) => previous.map((value, i) => i >= lastAnswered ? null : value)) : null,
   );
   return <div className="slide-inner theme-light decision-slide">
-    <Topline chapter="THE TRADE-OFFS" label="Illustrative decision aid, not a universal test" />
+    <Topline chapter="THE TRADE-OFFS" label="Illustrative decision aid & throughput benchmarks" />
     <h2 className="wide-heading">ASK BEFORE<br /><span className="text-blue">YOU BUILD.</span></h2>
-    <div className="decision-tree">{questions.map((question, i) => { const enabled = i === 0 || values.slice(0, i).every((value) => value === true); return <div key={question} className={`decision-row ${enabled ? '' : 'inactive'} ${values[i] !== null ? 'answered' : ''}`}><span className="decision-number">0{i + 1}</span><p>{question}</p><div className="decision-buttons"><button disabled={!enabled || revealed} aria-pressed={values[i] === true} onClick={() => answer(i, true)}>Yes</button><button disabled={!enabled || revealed} aria-pressed={values[i] === false} onClick={() => answer(i, false)}>No</button></div></div>; })}</div>
-    <div className="decision-verdict" aria-live="polite">{verdict ? <><ArrowRight size={37} /><p>{verdict}</p></> : <><span className="small-line" /><p>Start with the first question. Follow one path.</p></>}</div>
+    <div className="decision-view-toggle">
+      <button type="button" className={view === 'decision' ? 'active' : ''} onClick={() => setView('decision')}>01 Decision path</button>
+      <button type="button" className={view === 'tps' ? 'active' : ''} onClick={() => setView('tps')}>02 Throughput (TPS)</button>
+    </div>
+    {view === 'decision' ? (
+      <>
+        <div className="decision-tree">{questions.map((question, i) => { const enabled = i === 0 || values.slice(0, i).every((value) => value === true); return <div key={question} className={`decision-row ${enabled ? '' : 'inactive'} ${values[i] !== null ? 'answered' : ''}`}><span className="decision-number">0{i + 1}</span><p>{question}</p><div className="decision-buttons"><button disabled={!enabled || revealed} aria-pressed={values[i] === true} onClick={() => answer(i, true)}>Yes</button><button disabled={!enabled || revealed} aria-pressed={values[i] === false} onClick={() => answer(i, false)}>No</button></div></div>; })}</div>
+        <div className="decision-verdict" aria-live="polite">{verdict ? <><ArrowRight size={37} /><p>{verdict}</p></> : <><span className="small-line" /><p>Start with the first question. Follow one path.</p></>}</div>
+      </>
+    ) : (
+      <div className="tps-comparison-area" aria-live="polite">
+        <div className="tps-table">
+          {tpsBenchmarks.map((item) => (
+            <div key={item.system} className={`tps-row category-${item.category}`}>
+              <div className="tps-system">
+                <strong>{item.system}</strong>
+                <small>{item.detail}</small>
+              </div>
+              <div className="tps-metric">
+                <span className="tps-number">{item.label}</span>
+                <span className="tps-latency">Latency: {item.latency}</span>
+              </div>
+              <div className="tps-bar-wrapper">
+                <div
+                  className="tps-bar"
+                  style={{ width: `${Math.max(8, Math.min(100, (Math.log10(item.tps) / Math.log10(100000)) * 100))}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="tps-footer-note">
+          <span>Logarithmic scale. Decentralization trades raw throughput for multi-party verification.</span>
+          <Citation id="tps">Visa & L1 Benchmarks</Citation>
+        </div>
+      </div>
+    )}
     <Footline number={14}>Compare ways to solve the same problem, not technology buzzwords.</Footline>
   </div>;
 }

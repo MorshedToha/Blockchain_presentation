@@ -1952,7 +1952,7 @@ svg {
 
 .consensus-process {
   position: absolute;
-  top: 646px;
+  top: 575px;
   left: 64px;
   right: 64px;
 }
@@ -4148,4 +4148,179 @@ kbd {
   .slide-progress {
     display: none;
   }
+}
+
+/* --- Real-world Benchmark Enhancements --- */
+.consensus-benchmark {
+  position: absolute;
+  top: 660px;
+  left: 64px;
+  right: 64px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 16px;
+  background: rgba(22, 75, 236, 0.05);
+  border: 1px solid rgba(22, 75, 236, 0.15);
+  border-radius: 4px;
+  animation: appear 0.25s ease both;
+}
+
+.benchmark-badge {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 5px 11px;
+  background: var(--blue);
+  color: white;
+  white-space: nowrap;
+}
+
+.consensus-benchmark p {
+  margin: 0;
+  flex: 1;
+  font-size: 16px;
+  color: #3f4756;
+  line-height: 1.35;
+}
+
+.consensus-benchmark .citation {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.decision-view-toggle {
+  position: absolute;
+  top: 255px;
+  right: 64px;
+  display: flex;
+  gap: 6px;
+  background: #e6e9f0;
+  padding: 4px;
+  border-radius: 6px;
+  z-index: 5;
+}
+
+.decision-view-toggle button {
+  padding: 7px 15px;
+  font-size: 14px;
+  font-weight: 550;
+  border: none;
+  background: transparent;
+  color: #5c6577;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.decision-view-toggle button.active {
+  background: white;
+  color: var(--blue);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.decision-view-toggle button:hover:not(.active) {
+  color: #19191c;
+}
+
+.tps-comparison-area {
+  position: absolute;
+  top: 325px;
+  left: 64px;
+  right: 64px;
+  animation: appear 0.25s ease both;
+}
+
+.tps-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tps-row {
+  display: grid;
+  grid-template-columns: 290px 220px 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 6px 16px;
+  background: white;
+  border: 1px solid #d4d9e3;
+  height: 50px;
+}
+
+.tps-row.category-centralized {
+  border-left: 4px solid #10b981;
+}
+
+.tps-row.category-traditional {
+  border-left: 4px solid #3b82f6;
+}
+
+.tps-row.category-blockchain {
+  border-left: 4px solid var(--blue);
+}
+
+.tps-system strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111113;
+  line-height: 1.2;
+}
+
+.tps-system small {
+  display: block;
+  font-size: 12px;
+  color: #717784;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tps-metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.tps-number {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--blue);
+  line-height: 1.2;
+}
+
+.tps-latency {
+  font-size: 12px;
+  color: #717784;
+}
+
+.tps-bar-wrapper {
+  background: #edf0f7;
+  height: 9px;
+  border-radius: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.tps-bar {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+.category-centralized .tps-bar {
+  background: #10b981;
+}
+
+.category-traditional .tps-bar {
+  background: #3b82f6;
+}
+
+.tps-footer-note {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #646b79;
 }

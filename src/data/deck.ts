@@ -90,6 +90,62 @@ export const sources: Source[] = [
     url: 'https://www.wired.com/story/unciphered-ironkey-password-cracking-bitcoin/',
     detail: 'Reports Stefan Thomas\'s account of an encrypted IronKey holding keys to 7,002 bitcoin and eight unsuccessful attempts out of ten. The story also discusses recovery research. This deck does not claim that recovery is impossible or establish his present-day access status. No dollar valuation is shown.',
   },
+  {
+    id: 'ccri',
+    title: 'Crypto Carbon Ratings Institute: Ethereum Energy Study (2022)',
+    url: 'https://carbon-ratings.com/eth-report-2022',
+    detail: 'Documented an estimated 99.988% to 99.95% electrical power and carbon reduction when Ethereum migrated from Proof of Work to Proof of Stake during The Merge in September 2022.',
+  },
+  {
+    id: 'tps',
+    title: 'Visa & Blockchain Throughput Benchmarks',
+    url: 'https://usa.visa.com/solutions/crypto/deep-dive-on-solana.html',
+    detail: 'Visa processing capability exceeds 24,000 transactions per second (handling ~2,000 avg TPS), compared to Bitcoin L1 (5-7 TPS) and Ethereum L1 (15-30 TPS). Centralized databases exceed 10,000-100,000 TPS.',
+  },
+];
+
+export type TpsBenchmark = {
+  system: string;
+  category: 'centralized' | 'traditional' | 'blockchain';
+  tps: number;
+  label: string;
+  latency: string;
+  detail: string;
+};
+
+export const tpsBenchmarks: TpsBenchmark[] = [
+  {
+    system: 'Traditional Database',
+    category: 'centralized',
+    tps: 15000,
+    label: '10,000 – 100,000+ TPS',
+    latency: '< 10 ms',
+    detail: 'Single coordinator (PostgreSQL / Redis). Optimized for pure throughput.',
+  },
+  {
+    system: 'Visa Payment Rail',
+    category: 'traditional',
+    tps: 2000,
+    label: '~2,000 avg (24,000+ peak)',
+    latency: '1 – 2 sec',
+    detail: 'Centralized global clearinghouse network for retail transactions.',
+  },
+  {
+    system: 'Ethereum (L1 Layer)',
+    category: 'blockchain',
+    tps: 25,
+    label: '15 – 30 TPS',
+    latency: '~12 sec slot',
+    detail: 'Decentralized global smart contract platform with state verification.',
+  },
+  {
+    system: 'Bitcoin (L1 Layer)',
+    category: 'blockchain',
+    tps: 7,
+    label: '5 – 7 TPS',
+    latency: '~10 min block',
+    detail: 'Decentralized proof-of-work payment ledger. Security over throughput.',
+  },
 ];
 
 export const mangoTiming = {
@@ -217,15 +273,15 @@ export const slides: SlideData[] = [
     id: 8, title: 'Who adds the next block?', shortTitle: 'Work or stake?', speaker: 2, start: 530, duration: 70, theme: 'light',
     script: [
       'Proof of work uses repeated computation to find a result meeting a difficulty target. That takes equipment and electricity. Other participants still check whether the proposed block follows the rules.',
-      'Proof of stake uses validators who put assets at risk. Selected validators propose blocks; others check them. Certain actions can lead to penalties, depending on the network. Not every mistake deletes an entire stake.',
-      'Both need incentives and verification. Both can face concentrated influence. These are simplified processes, not performance measurements or guarantees of fairness.',
+      'Proof of stake uses validators who put assets at risk. Selected validators propose blocks; others check them. When Ethereum switched from PoW to PoS in 2022, studies documented an estimated 99.95% power drop. Penalties depend on network rules; not every mistake deletes an entire stake.',
+      'Both need incentives and verification. Both can face concentrated influence. These are simplified processes, not guarantees of fairness.',
     ],
-    takeaway: 'Proof of work commits computing effort; proof of stake puts stake at risk under network rules.',
+    takeaway: 'Proof of work commits computing effort; proof of stake puts stake at risk, cutting energy use by ~99.95%.',
     interaction: 'Choose each mechanism once to reveal its simplified process. Avoid turning this into a debate about coin prices. Leave 10 seconds for the handoff.',
     fallback: 'Read both comparisons: work uses computing effort and electricity; stake uses validators and assets at risk. Validity checks still matter in both.',
     beats: [{ label: 'Explain both approaches', seconds: 40 }, { label: 'Reveal the two processes and compare', seconds: 20 }, { label: 'Speaker handoff', seconds: 10 }],
     handoff: 'Now that we know how records are added, let\'s look at a few things people build with them.',
-    sources: ['nist', 'pow', 'pos'],
+    sources: ['nist', 'pow', 'pos', 'ccri'],
   },
   {
     id: 9, title: 'Smart contracts: code with conditions', shortTitle: 'If this, then that', speaker: 3, start: 600, duration: 75, theme: 'blue',
@@ -296,14 +352,14 @@ export const slides: SlideData[] = [
     id: 14, title: 'Is blockchain the right tool?', shortTitle: 'Ask before you build', speaker: 4, start: 970, duration: 65, theme: 'light',
     script: [
       'Start with the problem. Do multiple parties need to share and verify records? If not, a simpler record keeper may be enough. Do they need one shared system? Sometimes exchanging signed records is enough.',
-      'Would a regular database work? A trusted operator may be the straightforward choice. If not, blockchain is a candidate to compare, not an automatic answer.',
-      'Try a fictional school equipment register. Who writes records, checks them, corrects mistakes, and changes rules? Compare privacy, cost, and coordination with other designs. Neither technology has a universal speed advantage.',
+      'Would a regular database work? Centralized databases easily process 10,000 to 100,000+ transactions per second, compared to Bitcoin\'s 5-7 or Ethereum\'s 15-30 TPS. If a trusted operator works, use a standard database.',
+      'Try a fictional school equipment register. Who writes records, checks them, corrects mistakes, and changes rules? Compare privacy, throughput, cost, and coordination with other designs. Blockchain trades raw throughput for decentralized verification.',
     ],
-    takeaway: 'Compare blockchain with a regular database and other ways to solve the same problem.',
+    takeaway: 'Compare blockchain with a regular database (which offers orders-of-magnitude higher TPS) and other designs.',
     interaction: 'Answer the three questions with the audience using one fictional scenario. A No answer can end the path early. Reset lets the presenter try another path.',
     fallback: 'A single-party record often needs no blockchain. Several parties may exchange signed records. If a regular database meets the needs, use it. Otherwise evaluate blockchain and its trade-offs, rather than assuming it wins.',
     beats: [{ label: 'Introduce the decision questions', seconds: 25 }, { label: 'Follow one path through the diagram', seconds: 20 }, { label: 'Explain why a candidate is not a verdict', seconds: 20 }],
-    sources: ['nist'],
+    sources: ['nist', 'tps'],
   },
   {
     id: 15, title: 'The lost-key dilemma', shortTitle: 'What if you lose the key?', speaker: 4, start: 1035, duration: 105, theme: 'dark',
