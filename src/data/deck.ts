@@ -126,13 +126,13 @@ export const slides: SlideData[] = [
   {
     id: 1, title: 'Can digital money be copied?', shortTitle: 'The copy problem', speaker: 1, start: 0, duration: 70, theme: 'dark',
     script: [
-      'Quick show of hands: who has sent a photo or meme in a chat like WeChat or WhatsApp? When you sent it, did it disappear from your phone? No—you both had a copy. Great for photos.',
-      'Now imagine this $100 is digital. If I copy it and try to pay 50 people with the same $100, did I make $5,000? No, I made 50 claims on the same money. That is double spending. Let’s test a small version: click Copy, then choose Alex or Sam. Which payment should count? Take two quick answers. A record and its rules decide which payment is accepted. Blockchain is one way to keep that shared record. This is a classroom example, not real money or a full network.',
+      'If I send you a photo, I can keep a copy. That is useful for photos. Now imagine I have ten dollars in digital money. I copy the file and try to pay Alex ten dollars and Sam ten dollars. Have I created more money? No. I have made two claims on the same money. That is the double-spending problem.',
+      'What should stop both payments from counting? Take two quick suggestions. The important part is not stopping someone from copying a file. It is keeping an agreed record of which money has already been spent. Today we will explore one way to do that: blockchain. This is a classroom model, not real money.',
     ],
     takeaway: 'Copying digital information must not create a second spendable balance.',
-    interaction: 'Ask for a show of hands about sharing photos, then click Copy the $100. Invite at most two quick answers about which payment should count, then select Alex or Sam. The two-payment screen is a simplified double-spending example, not a real consensus algorithm.',
-    fallback: 'Say: "A copy does not make more money. These two payment attempts compete for the same $100; a record and its rules decide which one counts." Reveal answer shows Alex paid and Sam rejected.',
-    beats: [{ label: 'Photo-copy hook and show of hands', seconds: 20 }, { label: 'Set up and click the digital $100 puzzle', seconds: 25 }, { label: 'Choose a payment and name double spending', seconds: 25 }],
+    interaction: 'Click Copy the $10. Ask which payment should count, then select Alex or Sam. Take at most two audience suggestions. The choice illustrates an ordering decision, not a real consensus algorithm.',
+    fallback: 'Read aloud: "One $10 balance, two $10 payment attempts. Only one can count. A record and rules decide which." Reveal answer shows a completed example with Alex paid and Sam rejected.',
+    beats: [{ label: 'Set up the photo and money contrast', seconds: 30 }, { label: 'Copy, ask, and choose', seconds: 20 }, { label: 'Name double spending and introduce the talk', seconds: 20 }],
     sources: ['bitcoin', 'nist'],
   },
   {

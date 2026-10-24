@@ -28,13 +28,13 @@ function Citation({ id, children }: { id: string; children?: ReactNode }) {
 }
 
 function MoneyNote({ small = false }: { small?: boolean }) {
-  return <svg className={small ? 'money-note small' : 'money-note'} viewBox="0 0 380 192" role="img" aria-label="Illustrative one-hundred-dollar digital token">
+  return <svg className={small ? 'money-note small' : 'money-note'} viewBox="0 0 380 192" role="img" aria-label="Illustrative ten-dollar digital token">
     <rect x="2" y="2" width="376" height="188" fill="currentColor" />
     <rect x="13" y="13" width="354" height="166" fill="none" stroke="var(--blue)" strokeWidth="1.5" />
     <path d="M13 39Q39 39 39 13M341 13Q341 39 367 39M367 153Q341 153 341 179M39 179Q39 153 13 153" fill="none" stroke="var(--blue)" strokeWidth="1.5" />
     <text x="45" y="69" fill="var(--blue)" fontSize="33" fontWeight="500">$</text>
-    <text x="190" y="139" textAnchor="middle" fill="var(--blue)" fontSize="125" fontWeight="650" letterSpacing="-8">100</text>
-    <text x="305" y="160" fill="var(--blue)" fontSize="18" fontWeight="600">100</text>
+    <text x="190" y="139" textAnchor="middle" fill="var(--blue)" fontSize="145" fontWeight="650" letterSpacing="-11">10</text>
+    <text x="315" y="160" fill="var(--blue)" fontSize="20" fontWeight="600">10</text>
     <path d="M47 123v26m7-34v34m7-43v43m7-54v54m7-41v41" stroke="var(--blue)" strokeWidth="1.4" />
   </svg>;
 }
@@ -46,7 +46,7 @@ function Intro({ revealed }: ActivityProps) {
   const selected = revealed ? 'Alex' : payment;
   useSlideNavigation(
     revealed || payment ? null : !copied
-      ? { label: 'Copy the $100', run: () => setCopied(true) }
+      ? { label: 'Copy the $10', run: () => setCopied(true) }
       : { label: 'Count Alex\'s payment in the example', run: () => setPayment('Alex') },
     revealed ? null : payment ? () => setPayment(null) : copied ? () => setCopied(false) : null,
   );
@@ -58,19 +58,19 @@ function Intro({ revealed }: ActivityProps) {
       <h1>CAN DIGITAL<br />MONEY BE<br />COPIED<span className="blue-question">?</span></h1>
       <p className="intro-description">Copying a photo is easy.<br />Spending the same money twice is a problem.</p>
       <div className="intro-action-area">
-        {!isCopied ? <Action onClick={() => setCopied(true)}><Copy size={23} />Copy the $100<ArrowRight size={25} /></Action> : <div className="intro-result" aria-live="polite"><span className="result-rule" />{selected ? <><strong>One payment counts.</strong><span>A copy does not create more money.</span></> : <><strong>Two copies. Still just $100.</strong><span>Which payment should count?</span></>}</div>}
+        {!isCopied ? <Action onClick={() => setCopied(true)}><Copy size={23} />Copy the $10<ArrowRight size={25} /></Action> : <div className="intro-result" aria-live="polite"><span className="result-rule" />{selected ? <><strong>One payment counts.</strong><span>A copy does not create more money.</span></> : <><strong>Two copies. Still just $10.</strong><span>Which payment should count?</span></>}</div>}
       </div>
     </div>
     <div className={`token-stage ${isCopied ? 'is-copied' : ''}`}>
       <div className="diagram-caption">YOUR DIGITAL WALLET</div>
       <div className="note-outline" aria-hidden="true" />
       <div className="original-note"><MoneyNote /></div>
-      <div className="balance-caption">Available balance <strong>$100</strong></div>
+      <div className="balance-caption">Available balance <strong>$10</strong></div>
       <svg className="fork-lines" viewBox="0 0 540 146" aria-hidden="true"><path d="M270 0V62M120 133V62H420V133" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="m111 123 9 10 9-10m282 0 9 10 9-10" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
       <div className="payment-options">
         {(['Alex', 'Sam'] as const).map((name) => <button type="button" key={name} disabled={!isCopied || !!selected} onClick={() => setPayment(name)} className={`payment-option ${selected === name ? 'counts' : ''} ${selected && selected !== name ? 'rejected' : ''}`}>
           <span className="payment-label">PAYMENT {name === 'Alex' ? 'A' : 'B'}</span>
-          <span className="payment-amount">$100{selected && (selected === name ? <Check size={29} /> : <X size={29} />)}</span>
+          <span className="payment-amount">$10{selected && (selected === name ? <Check size={29} /> : <X size={29} />)}</span>
           <span className="payment-name">To {name}</span>
           <span className="payment-state">{selected ? selected === name ? 'Counted in this example' : 'Already spent' : isCopied ? 'Choose this payment' : 'Waiting for a copy'}</span>
         </button>)}
