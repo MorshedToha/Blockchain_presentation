@@ -86,18 +86,6 @@ https://www.wired.com/story/unciphered-ironkey-password-cracking-bitcoin/
 
 Reports Stefan Thomas's account of an encrypted IronKey holding keys to 7,002 bitcoin and eight unsuccessful attempts out of ten. The story also discusses recovery research. This deck does not claim that recovery is impossible or establish his present-day access status. No dollar valuation is shown.
 
-## 15. Crypto Carbon Ratings Institute: Ethereum Energy Study (2022)
-
-https://carbon-ratings.com/eth-report-2022
-
-Documented an estimated 99.988% to 99.95% electrical power and carbon reduction when Ethereum migrated from Proof of Work to Proof of Stake during The Merge in September 2022.
-
-## 16. Visa & Blockchain Throughput Benchmarks
-
-https://usa.visa.com/solutions/crypto/deep-dive-on-solana.html
-
-Visa processing capability exceeds 24,000 transactions per second (handling ~2,000 avg TPS), compared to Bitcoin L1 (5-7 TPS) and Ethereum L1 (15-30 TPS). Centralized databases exceed 10,000-100,000 TPS.
-
 ## Visual Credits
 
 All teaching diagrams, the tracing-time chart, and the minimal drifting-speck backgrounds on the two title screens are original HTML, CSS, and SVG created for this presentation. No external photographs, audio, or video are used. The supplied image was a visual-layout reference only and is not embedded. Inter is locally bundled from Fontsource (https://fontsource.org/fonts/inter), copyright The Inter Project Authors (https://github.com/rsms/inter), under the SIL Open Font License 1.1. Interface icons: Lucide, ISC license (https://lucide.dev/license). Cryptographic libraries: noble-curves and noble-hashes by Paul Miller, MIT license (https://github.com/paulmillr/noble-curves and https://github.com/paulmillr/noble-hashes). No remote fonts or media are requested.
