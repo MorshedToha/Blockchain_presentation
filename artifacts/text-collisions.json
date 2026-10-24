@@ -1,0 +1,214 @@
+[
+  {
+    "slide": 1,
+    "pairs": [
+      [
+        "CAN DIGITAL",
+        "MONEY BE",
+        409,
+        21
+      ],
+      [
+        "MONEY BE",
+        "COPIED",
+        289,
+        21
+      ],
+      [
+        "MONEY BE",
+        "?",
+        43,
+        21
+      ]
+    ]
+  },
+  {
+    "slide": 2,
+    "pairs": [
+      [
+        "ONE RECORD.",
+        "ONE KEEPER.",
+        406,
+        16
+      ]
+    ]
+  },
+  {
+    "slide": 3,
+    "pairs": [
+      [
+        "ONE LEDGER.",
+        "MANY COPIES.",
+        381,
+        16
+      ]
+    ]
+  },
+  {
+    "slide": 4,
+    "pairs": [
+      [
+        "SAME RULES.",
+        "SAME CHECKS.",
+        427,
+        17
+      ]
+    ]
+  },
+  {
+    "slide": 5,
+    "pairs": [
+      [
+        "NOT AN",
+        "OVERNIGHT IDEA.",
+        250,
+        17
+      ]
+    ]
+  },
+  {
+    "slide": 6,
+    "pairs": [
+      [
+        "A BLOCK",
+        "IS A",
+        141,
+        18
+      ],
+      [
+        "A BLOCK",
+        "BATCH.",
+        165,
+        18
+      ]
+    ]
+  },
+  {
+    "slide": 7,
+    "pairs": [
+      [
+        "CHANGE A RECORD.",
+        "BREAK A LINK.",
+        430,
+        16
+      ]
+    ]
+  },
+  {
+    "slide": 8,
+    "pairs": [
+      [
+        "WHO ADDS",
+        "THE NEXT BLOCK?",
+        364,
+        17
+      ]
+    ]
+  },
+  {
+    "slide": 9,
+    "pairs": [
+      [
+        "IF THIS.",
+        "THEN THAT.",
+        297,
+        21
+      ]
+    ]
+  },
+  {
+    "slide": 10,
+    "pairs": [
+      [
+        "CODE CAN'T",
+        "SEE YOUR FLIGHT.",
+        402,
+        17
+      ]
+    ]
+  },
+  {
+    "slide": 11,
+    "pairs": [
+      [
+        "FOLLOW",
+        "THE MANGO.",
+        123,
+        16
+      ],
+      [
+        "THE MANGO.",
+        "THE MANGO.",
+        123,
+        16
+      ]
+    ]
+  },
+  {
+    "slide": 12,
+    "pairs": [
+      [
+        "CHECK THE",
+        "RECORD.",
+        270,
+        16
+      ],
+      [
+        "RECORD.",
+        "TRUST THE",
+        270,
+        16
+      ],
+      [
+        "TRUST THE",
+        "ISSUER.",
+        233,
+        16
+      ]
+    ]
+  },
+  {
+    "slide": 13,
+    "pairs": [
+      [
+        "NOT FREE",
+        "OF TRADE-OFFS.",
+        308,
+        17
+      ]
+    ]
+  },
+  {
+    "slide": 14,
+    "pairs": [
+      [
+        "ASK BEFORE",
+        "YOU BUILD.",
+        357,
+        17
+      ]
+    ]
+  },
+  {
+    "slide": 15,
+    "pairs": [
+      [
+        "WHAT IF YOU",
+        "LOSE THE KEY?",
+        422,
+        17
+      ]
+    ]
+  },
+  {
+    "slide": 16,
+    "pairs": [
+      [
+        "SHARED RECORDS.",
+        "REAL TRADE-OFFS.",
+        624,
+        17
+      ]
+    ]
+  }
+]

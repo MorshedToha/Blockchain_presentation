@@ -1,0 +1,118 @@
+{
+  "slides": 16,
+  "untimedBookends": 2,
+  "seconds": 1200,
+  "offline": true,
+  "interactions": [
+    "01: keyboard token copy, both payment states, reset",
+    "02: central and distributed diagrams",
+    "03: open and permissioned participation",
+    "04: valid and invalid balance checks",
+    "05: all four timeline milestones",
+    "06: add record and inspect block contents",
+    "07: real SHA-256, stale hash, changed hash, preserved next reference, reset",
+    "08: work and stake processes",
+    "09: insufficient and sufficient vending inputs",
+    "10: on-time, delayed, and missing outside data",
+    "11: supplier provenance and incorrect input",
+    "12: real signature validation, one-character failure, restored content",
+    "13: benefit and trade-off explanations",
+    "14: every decision path",
+    "15: both fictional recovery choices",
+    "16: four takeaways, persistent closing question, end boundary",
+    "Step navigation: all 16 forward/back sequences, Next buttons, pager keys, skip shortcuts, and manual choices",
+    "Minimal bookends: exact requested subtitles, static BLOCKCHAIN text without glitch layers or text animations, faint background scan, keyboard pause/resume/replay, and reduced motion"
+  ],
+  "accessibility": [],
+  "viewports": [
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 844,
+      "height": 390
+    },
+    {
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "timing": [
+    {
+      "slide": 2,
+      "start": 70,
+      "verified": true
+    },
+    {
+      "slide": 3,
+      "start": 145,
+      "verified": true
+    },
+    {
+      "slide": 4,
+      "start": 225,
+      "verified": true
+    },
+    {
+      "slide": 5,
+      "start": 300,
+      "verified": true
+    },
+    {
+      "slide": 6,
+      "start": 370,
+      "verified": true
+    },
+    {
+      "slide": 7,
+      "start": 440,
+      "verified": true
+    },
+    {
+      "slide": 8,
+      "start": 530,
+      "verified": true
+    },
+    {
+      "slide": 9,
+      "start": 600,
+      "verified": true
+    },
+    {
+      "slide": 10,
+      "start": 675,
+      "verified": true
+    },
+    {
+      "slide": 11,
+      "start": 750,
+      "verified": true
+    },
+    {
+      "slide": 12,
+      "start": 830,
+      "verified": true
+    },
+    {
+      "slide": 13,
+      "start": 900,
+      "verified": true
+    },
+    {
+      "slide": 14,
+      "start": 970,
+      "verified": true
+    },
+    {
+      "slide": 15,
+      "start": 1035,
+      "verified": true
+    },
+    {
+      "slide": 16,
+      "start": 1140,
+      "verified": true
+    }
+  ]
+}
