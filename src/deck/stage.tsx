@@ -16,12 +16,28 @@ export function useFit(ref: React.RefObject<HTMLDivElement | null>) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
+    const update = () => {
       const r = el.getBoundingClientRect();
-      setScale(Math.max(0.05, Math.min(r.width / W, r.height / H)));
-    });
+      if (r.width > 0 && r.height > 0) {
+        setScale(Math.max(0.05, Math.min(r.width / W, r.height / H)));
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", update);
+    }
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", update);
+      }
+    };
   }, [ref]);
   return scale;
 }

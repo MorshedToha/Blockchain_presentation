@@ -62,6 +62,36 @@ function Deck() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
 
+  // Mobile & Orientation state
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined"
+      ? window.innerWidth < 1024 || window.innerHeight < 650 || "ontouchstart" in window
+      : false
+  );
+  const [isPortrait, setIsPortrait] = useState(() =>
+    typeof window !== "undefined" ? window.innerHeight > window.innerWidth : false
+  );
+  const [forceRotate, setForceRotate] = useState(false);
+  const [dismissRotateTip, setDismissRotateTip] = useState(false);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      const portrait = window.innerHeight > window.innerWidth;
+      setIsPortrait(portrait);
+      setIsMobile(window.innerWidth < 1024 || window.innerHeight < 650 || "ontouchstart" in window);
+      if (!portrait) {
+        setForceRotate(false); // cancel software rotation if physically landscape
+      }
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
+  }, []);
+
   const [reduced, setReduced] = useState(() => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
   const [skip, setSkip] = useState(false);
   const [finishTick, setFinishTick] = useState(0);
@@ -188,6 +218,27 @@ function Deck() {
     if (window.location.hash !== h) window.history.replaceState(null, "", h);
     document.title = `${slide.title} — Blockchain`;
   }, [index, step, slide.title]);
+
+  // Touch Swipe Handling on Mobile
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) next();
+      else prev();
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
   // Presenter View link
   const openPresenter = useCallback(() => {
@@ -329,7 +380,6 @@ function Deck() {
           break;
         case "r":
         case "R":
-          // Rehearsal: restart current slide from scratch
           animEnd.current = 0;
           setDir("fwd");
           setPos(([i]) => [i, 0]);
@@ -362,52 +412,208 @@ function Deck() {
   const scale = useFit(stageBox);
   const Cmp = slide.Component;
 
+  const isFrameless = fs || isMobile;
+
   return (
-    <div className={cn("flex h-full w-full", fs ? "bg-ink" : "bg-sheet")}>
-      <div className={cn("flex min-w-0 flex-1 flex-col", fs ? "p-0" : "p-6 pb-3")}>
-        <div ref={stageBox} className="relative flex min-h-0 flex-1 items-center justify-center">
-          <div style={{ width: W * scale, height: H * scale }} className="relative">
-            <div
-              className={cn("absolute left-0 top-0 overflow-hidden", themeBg[slide.theme], skip && "skip", reduced && "reduced")}
-              style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: "0 0" }}
-              onClick={(e) => {
-                const t = e.target as HTMLElement;
-                if (t.closest("button, input, textarea, select, a, label, nav")) return;
-                if (window.getSelection()?.toString()) return;
-                next();
-              }}
-              role="region"
-              aria-roledescription="slide"
-              aria-label={`Slide ${index + 1} of ${SLIDES.length}: ${slide.title}`}
-            >
-              <ProgressLine index={index} step={step} theme={slide.theme} />
-              <DeckContext.Provider value={api}>
-                <SlideEnter dir={dir} k={index}>
-                  <Cmp key={`${index}-${resetN}`} />
-                </SlideEnter>
-              </DeckContext.Provider>
-              <div className="pointer-events-none absolute inset-0 z-[60] bg-ink transition-opacity duration-300" style={{ opacity: blank ? 1 : 0 }} aria-hidden />
-              {!fs && (
-                <Controls
-                  hidden
-                  theme={slide.theme}
-                  index={index}
-                  step={step}
-                  builds={slide.builds}
-                  onPrev={prev}
-                  onNext={next}
-                  onGrid={() => setOverview(true)}
-                  onNotes={() => setNotes((v) => !v)}
-                  onRemote={() => setRemoteModalOpen(true)}
-                  onFs={toggleFs}
-                  fs={fs}
-                  notes={notes}
-                  connectedCount={connectedPeers.length}
+    <div
+      className={cn(
+        "flex h-full w-full overflow-hidden select-none",
+        isFrameless ? "bg-ink" : "bg-sheet"
+      )}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className={cn("relative flex min-w-0 flex-1 flex-col overflow-hidden", isFrameless ? "p-0" : "p-6 pb-3")}>
+        {/* Rotate Tip for Mobile Portrait */}
+        {!dismissRotateTip && isMobile && isPortrait && !forceRotate && (
+          <div className="absolute top-3 left-3 right-3 z-50 flex items-center justify-between rounded-lg bg-[#084BC5] px-3.5 py-2 text-[12px] font-bold uppercase tracking-wider text-white shadow-xl animate-pulse">
+            <div className="flex items-center gap-2">
+              <span className="text-[17px]">🔄</span>
+              <span>Rotate phone sideways for full screen</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setForceRotate(true)}
+                className="rounded bg-white/20 px-2.5 py-1 text-[11px] font-black uppercase text-white hover:bg-white/30 active:scale-95"
+              >
+                Rotate 90°
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissRotateTip(true)}
+                className="px-1.5 py-0.5 text-white/70 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Forced 90 degree button if active */}
+        {forceRotate && (
+          <button
+            type="button"
+            onClick={() => setForceRotate(false)}
+            className="absolute top-3 right-3 z-50 rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold uppercase text-white backdrop-blur-md"
+          >
+            ↩ Normal View
+          </button>
+        )}
+
+        {/* Presentation Stage Box */}
+        <div
+          className={cn(
+            "relative flex min-h-0 flex-1 items-center justify-center transition-all duration-300",
+            forceRotate && "origin-center transform rotate-90"
+          )}
+          style={
+            forceRotate
+              ? {
+                  width: "100vh",
+                  height: "100vw",
+                  position: "absolute",
+                  left: "calc(50% - 50vh)",
+                  top: "calc(50% - 50vw)",
+                }
+              : undefined
+          }
+        >
+          <div ref={stageBox} className="relative flex h-full w-full items-center justify-center">
+            <div style={{ width: W * scale, height: H * scale }} className="relative shadow-2xl">
+              <div
+                className={cn("absolute left-0 top-0 overflow-hidden", themeBg[slide.theme], skip && "skip", reduced && "reduced")}
+                style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: "0 0" }}
+                onClick={(e) => {
+                  const t = e.target as HTMLElement;
+                  if (t.closest("button, input, textarea, select, a, label, nav")) return;
+                  if (window.getSelection()?.toString()) return;
+
+                  // On mobile touch: tap right 60% = next, tap left 40% = prev
+                  if (isMobile) {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    if (clickX < rect.width * 0.38) {
+                      prev();
+                      return;
+                    }
+                  }
+                  next();
+                }}
+                role="region"
+                aria-roledescription="slide"
+                aria-label={`Slide ${index + 1} of ${SLIDES.length}: ${slide.title}`}
+              >
+                <ProgressLine index={index} step={step} theme={slide.theme} />
+                <DeckContext.Provider value={api}>
+                  <SlideEnter dir={dir} k={index}>
+                    <Cmp key={`${index}-${resetN}`} />
+                  </SlideEnter>
+                </DeckContext.Provider>
+                <div
+                  className="pointer-events-none absolute inset-0 z-[60] bg-ink transition-opacity duration-300"
+                  style={{ opacity: blank ? 1 : 0 }}
+                  aria-hidden
                 />
-              )}
+                {!fs && !isMobile && (
+                  <Controls
+                    hidden
+                    theme={slide.theme}
+                    index={index}
+                    step={step}
+                    builds={slide.builds}
+                    onPrev={prev}
+                    onNext={next}
+                    onGrid={() => setOverview(true)}
+                    onNotes={() => setNotes((v) => !v)}
+                    onRemote={() => setRemoteModalOpen(true)}
+                    onFs={toggleFs}
+                    fs={fs}
+                    notes={notes}
+                    connectedCount={connectedPeers.length}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Mobile Landscape Floating HUD (Discreet, semi-transparent) */}
+        {isMobile && (!isPortrait || forceRotate) && (
+          <div className="pointer-events-none absolute bottom-2 left-3 right-3 z-40 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/80">
+            <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 backdrop-blur-md border border-white/10">
+              <span className="font-display text-[13px] text-white">
+                {contentNo(index) ? String(contentNo(index)).padStart(2, "0") : "—"}{" "}
+                <span className="text-white/50">/ 12</span>
+              </span>
+              <a href="?remote#room=33" className="text-[#3b82f6] hover:underline pl-1">
+                📱 Notes
+              </a>
+            </div>
+
+            <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/60 p-1 backdrop-blur-md border border-white/10">
+              <button
+                type="button"
+                onClick={prev}
+                className="rounded-full bg-white/10 px-2.5 py-1 text-white active:bg-white/30"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={next}
+                className="rounded-full bg-[#084BC5] px-3 py-1 font-black text-white active:bg-blue-600"
+              >
+                Next →
+              </button>
+              <button
+                type="button"
+                onClick={toggleFs}
+                className="rounded-full bg-white/10 px-2 py-1 text-white/70"
+              >
+                {fs ? "Exit" : "⛶"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Portrait Bottom Navigation Bar */}
+        {isMobile && isPortrait && !forceRotate && (
+          <div className="shrink-0 flex items-center justify-between border-t border-white/10 bg-[#121316] px-3 py-2.5 text-white z-40">
+            <a
+              href="?remote#room=33"
+              className="rounded bg-[#084BC5] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5 shadow-md"
+            >
+              <span>📱 Notes Remote</span>
+            </a>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={prev}
+                className="rounded bg-white/10 px-3 py-1.5 text-[12px] font-bold uppercase text-white active:bg-white/25"
+              >
+                ← Prev
+              </button>
+              <span className="tabnum font-display text-[14px] font-bold text-white/90 px-1">
+                {contentNo(index) ? String(contentNo(index)).padStart(2, "0") : "—"} / 12
+              </span>
+              <button
+                type="button"
+                onClick={next}
+                className="rounded bg-white/10 px-3 py-1.5 text-[12px] font-bold uppercase text-white active:bg-white/25"
+              >
+                Next →
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={toggleFs}
+              className="rounded bg-white/5 px-2.5 py-1.5 text-[11px] font-bold text-white/70 active:bg-white/20"
+            >
+              {fs ? "Exit" : "Full ⛶"}
+            </button>
+          </div>
+        )}
 
         {/* Subtle toast for mobile remote events */}
         {toastMsg && (
@@ -417,7 +623,8 @@ function Deck() {
           </div>
         )}
 
-        {!fs && (
+        {/* Desktop Footer (hidden on mobile) */}
+        {!fs && !isMobile && (
           <div className="flex h-9 shrink-0 items-end justify-between px-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/60">
             <span>
               Click / → next · M mobile remote · N notes · P presenter view · F fullscreen · G overview · . black screen · R restart
