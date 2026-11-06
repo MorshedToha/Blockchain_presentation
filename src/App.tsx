@@ -4,9 +4,14 @@ import { themeBg, type Theme } from "@/deck/ui";
 import { SLIDES, contentNo } from "@/slides";
 import { cn } from "@/utils/cn";
 import { PresenterView } from "@/deck/Presenter";
+import { MobileRemote } from "@/deck/MobileRemote";
+import { RemoteModal } from "@/deck/RemoteModal";
+import { RemoteSync } from "@/deck/remoteSync";
 import { H, StaticSlide, W, mmss, useFit, type AudienceMsg, type PresenterMsg } from "@/deck/stage";
 
-const IS_PRESENTER = new URLSearchParams(window.location.search).has("presenter");
+const params = new URLSearchParams(window.location.search);
+const IS_PRESENTER = params.has("presenter");
+const IS_REMOTE = params.has("remote");
 
 const BUILD_MS = 650;
 const SLIDE_MS = 480;
@@ -41,7 +46,9 @@ function SlideEnter({ children, dir, k }: { children: ReactNode; dir: Dir; k: nu
 }
 
 export default function App() {
-  return IS_PRESENTER ? <PresenterView /> : <Deck />;
+  if (IS_REMOTE) return <MobileRemote />;
+  if (IS_PRESENTER) return <PresenterView />;
+  return <Deck />;
 }
 
 function Deck() {
@@ -49,6 +56,12 @@ function Deck() {
   const [dir, setDir] = useState<Dir>("fwd");
   const [overview, setOverview] = useState(false);
   const [notes, setNotes] = useState(false);
+  const [remoteModalOpen, setRemoteModalOpen] = useState(false);
+  const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
+  const [isMqttConnected, setIsMqttConnected] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimer = useRef<number | undefined>(undefined);
+
   const [reduced, setReduced] = useState(() => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
   const [skip, setSkip] = useState(false);
   const [finishTick, setFinishTick] = useState(0);
@@ -56,17 +69,30 @@ function Deck() {
   const [resetN, setResetN] = useState(0);
   const [t0, setT0] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
+
+  const hashRoom = window.location.hash.match(/room=([a-zA-Z0-9_-]+)/)?.[1];
+  const room = params.get("room") || hashRoom || "33";
+
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(t);
   }, []);
+
   const elapsed = Math.floor((now - t0) / 1000);
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
     setT0(Date.now());
     setNow(Date.now());
-  };
+  }, []);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToastMsg(null), 2500);
+  }, []);
+
   const [blank, setBlank] = useState(false);
   const presenterWin = useRef<Window | null>(null);
+  const syncRef = useRef<RemoteSync | null>(null);
   const animEnd = useRef(0);
   const skipTimer = useRef<number | undefined>(undefined);
 
@@ -146,7 +172,7 @@ function Deck() {
     return () => document.removeEventListener("fullscreenchange", on);
   }, []);
 
-  // respond to manual hash edits
+  // Respond to manual hash edits
   useEffect(() => {
     const on = () => {
       const [i, st] = parseHash();
@@ -168,11 +194,14 @@ function Deck() {
     const url = window.location.href.split("#")[0].split("?")[0] + "?presenter";
     presenterWin.current = window.open(url, "bc-presenter", "width=1440,height=900");
   }, []);
+
   const postState = useCallback(() => {
     const w = presenterWin.current;
     if (w && !w.closed) w.postMessage({ src: "bc-audience", type: "state", index, step, blank } satisfies AudienceMsg, "*");
   }, [index, step, blank]);
+
   useEffect(postState, [postState]);
+
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       const d = e.data as PresenterMsg;
@@ -190,7 +219,63 @@ function Deck() {
     return () => window.removeEventListener("message", onMsg);
   }, [next, prev, goSlide, postState]);
 
-  // Keyboard
+  // Mobile Remote Sync Host
+  useEffect(() => {
+    const sync = new RemoteSync(room, true, {
+      onCmd: (cmd) => {
+        if (cmd.type === "cmd") {
+          if (cmd.cmd === "next") {
+            next();
+            showToast("📱 Remote: Next Cue →");
+          } else if (cmd.cmd === "prev") {
+            prev();
+            showToast("📱 Remote: ← Prev");
+          } else if (cmd.cmd === "blank") {
+            setBlank((b) => !b);
+            showToast("📱 Remote: Blackout Toggled");
+          } else if (cmd.cmd === "first") {
+            goSlide(0);
+            showToast("📱 Remote: Jumped to First Slide");
+          } else if (cmd.cmd === "last") {
+            goSlide(SLIDES.length - 1, SLIDES[SLIDES.length - 1].builds);
+            showToast("📱 Remote: Jumped to Last Slide");
+          }
+        } else if (cmd.type === "goto") {
+          goSlide(cmd.index, cmd.step ?? 0);
+          showToast(`📱 Remote: Jumped to Slide ${cmd.index + 1}`);
+        } else if (cmd.type === "resetTimer") {
+          resetTimer();
+          showToast("📱 Remote: Timer Reset");
+        } else if (cmd.type === "vote") {
+          const key = cmd.choice === "pow" ? "a" : "b";
+          window.dispatchEvent(new KeyboardEvent("keydown", { key }));
+          showToast(`📱 Remote: Vote ${cmd.choice.toUpperCase()}`);
+        } else if (cmd.type === "hello") {
+          sync.sendState({ index, step, blank, elapsed });
+        }
+      },
+      onPeerJoin: (peer) => {
+        setConnectedPeers((prev) => Array.from(new Set([...prev, peer])));
+        showToast(`📱 Phone Connected: ${peer}`);
+        sync.sendState({ index, step, blank, elapsed });
+      },
+      onStatus: (conn) => {
+        setIsMqttConnected(conn);
+      },
+    });
+    syncRef.current = sync;
+
+    return () => {
+      sync.destroy();
+    };
+  }, [room, next, prev, goSlide, resetTimer, showToast, index, step, blank, elapsed]);
+
+  // Broadcast live state updates to phones
+  useEffect(() => {
+    syncRef.current?.sendState({ index, step, blank, elapsed });
+  }, [index, step, blank, elapsed]);
+
+  // Keyboard controls
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
@@ -240,11 +325,11 @@ function Deck() {
           break;
         case "m":
         case "M":
-          setReduced((v) => !v);
+          setRemoteModalOpen((v) => !v);
           break;
         case "r":
         case "R":
-          // rehearsal: restart the current slide and its demos from scratch
+          // Rehearsal: restart current slide from scratch
           animEnd.current = 0;
           setDir("fwd");
           setPos(([i]) => [i, 0]);
@@ -260,6 +345,7 @@ function Deck() {
         case "Escape":
           setOverview(false);
           setBlank(false);
+          setRemoteModalOpen(false);
           break;
       }
     };
@@ -301,21 +387,70 @@ function Deck() {
                 </SlideEnter>
               </DeckContext.Provider>
               <div className="pointer-events-none absolute inset-0 z-[60] bg-ink transition-opacity duration-300" style={{ opacity: blank ? 1 : 0 }} aria-hidden />
-              {!fs && <Controls hidden theme={slide.theme} index={index} step={step} builds={slide.builds} onPrev={prev} onNext={next} onGrid={() => setOverview(true)} onNotes={() => setNotes((v) => !v)} onFs={toggleFs} fs={fs} notes={notes} />}
+              {!fs && (
+                <Controls
+                  hidden
+                  theme={slide.theme}
+                  index={index}
+                  step={step}
+                  builds={slide.builds}
+                  onPrev={prev}
+                  onNext={next}
+                  onGrid={() => setOverview(true)}
+                  onNotes={() => setNotes((v) => !v)}
+                  onRemote={() => setRemoteModalOpen(true)}
+                  onFs={toggleFs}
+                  fs={fs}
+                  notes={notes}
+                  connectedCount={connectedPeers.length}
+                />
+              )}
             </div>
           </div>
         </div>
-        {!fs && (
-          <div className="flex h-9 shrink-0 items-end justify-between px-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/60">
-            <span>Click / → next · P presenter view · F fullscreen · N notes · G overview · . black screen · R restart slide · M motion</span>
-            <button type="button" onClick={() => setReduced((v) => !v)} className="focus-ring uppercase hover:text-ink">
-              Motion: {reduced ? "Reduced" : "Full"}
-            </button>
+
+        {/* Subtle toast for mobile remote events */}
+        {toastMsg && (
+          <div className="fixed top-6 right-6 z-[90] flex items-center gap-2 rounded-full border-2 border-cobalt bg-paper px-4 py-2 font-display text-[13px] font-bold uppercase tracking-wider text-ink shadow-[4px_4px_0px_#084BC5] transition-all animate-bounce">
+            <span className="h-2 w-2 rounded-full bg-cobalt animate-ping" />
+            {toastMsg}
           </div>
         )}
+
+        {!fs && (
+          <div className="flex h-9 shrink-0 items-end justify-between px-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/60">
+            <span>
+              Click / → next · M mobile remote · N notes · P presenter view · F fullscreen · G overview · . black screen · R restart
+            </span>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setRemoteModalOpen(true)}
+                className="focus-ring flex items-center gap-1.5 font-bold uppercase text-cobalt hover:underline"
+              >
+                <span>📱 Mobile Remote</span>
+                {connectedPeers.length > 0 && (
+                  <span className="rounded bg-cobalt px-1.5 py-0.2 text-[10px] text-paper">
+                    {connectedPeers.length} Paired
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setReduced((v) => !v)}
+                className="focus-ring uppercase hover:text-ink"
+              >
+                Motion: {reduced ? "Reduced" : "Full"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {fs && notes && <NotesPanel index={index} step={step} overlay elapsed={elapsed} onReset={resetTimer} />}
       </div>
+
       {!fs && notes && <NotesPanel index={index} step={step} elapsed={elapsed} onReset={resetTimer} />}
+
       {overview && (
         <Overview
           current={index}
@@ -326,6 +461,15 @@ function Deck() {
           onClose={() => setOverview(false)}
         />
       )}
+
+      {/* Mobile Remote Pairing Modal */}
+      <RemoteModal
+        room={room}
+        isOpen={remoteModalOpen}
+        onClose={() => setRemoteModalOpen(false)}
+        connectedPeers={connectedPeers}
+        isMqttConnected={isMqttConnected}
+      />
     </div>
   );
 }
@@ -341,37 +485,75 @@ function Controls(p: {
   onNext: () => void;
   onGrid: () => void;
   onNotes: () => void;
+  onRemote: () => void;
   onFs: () => void;
   fs: boolean;
   notes: boolean;
+  connectedCount: number;
 }) {
   const light = p.theme !== "white";
   const col = light ? "text-paper/70 hover:text-paper" : "text-mute hover:text-ink";
   const b = cn("focus-ring px-2 py-1 text-[17px] font-semibold uppercase tracking-[0.12em] transition-colors", col);
+
   return (
-    <nav aria-label="Presentation controls" className={cn("absolute bottom-[32px] right-[96px] z-50 flex items-center gap-3 transition-opacity duration-300", p.hidden && "opacity-0 hover:opacity-100 focus-within:opacity-100")}>
-      <button type="button" className={b} onClick={p.onGrid}>Overview</button>
-      <button type="button" className={cn(b, p.notes && (light ? "text-paper" : "text-ink"))} onClick={p.onNotes} aria-pressed={p.notes}>Notes</button>
-      <button type="button" className={b} onClick={p.onFs}>{p.fs ? "Exit full" : "Full"}</button>
+    <nav
+      aria-label="Presentation controls"
+      className={cn(
+        "absolute bottom-[32px] right-[96px] z-50 flex items-center gap-3 transition-opacity duration-300",
+        p.hidden && "opacity-0 hover:opacity-100 focus-within:opacity-100"
+      )}
+    >
+      <button type="button" className={b} onClick={p.onGrid}>
+        Overview
+      </button>
+      <button
+        type="button"
+        className={cn(b, p.notes && (light ? "text-paper" : "text-ink"))}
+        onClick={p.onNotes}
+        aria-pressed={p.notes}
+      >
+        Notes
+      </button>
+      <button
+        type="button"
+        className={cn(b, p.connectedCount > 0 && "text-cobalt font-bold")}
+        onClick={p.onRemote}
+        title="Open Mobile Remote QR Code (M)"
+      >
+        📱 Remote {p.connectedCount > 0 ? `(${p.connectedCount})` : ""}
+      </button>
+      <button type="button" className={b} onClick={p.onFs}>
+        {p.fs ? "Exit full" : "Full"}
+      </button>
       <span className={cn("mx-3 h-6 w-px", light ? "bg-paper/30" : "bg-rule")} />
-      <button type="button" className={b} onClick={p.onPrev} aria-label="Previous">← Prev</button>
+      <button type="button" className={b} onClick={p.onPrev} aria-label="Previous">
+        ← Prev
+      </button>
       <div className={cn("flex min-w-[118px] flex-col items-center", light ? "text-paper" : "text-ink")}>
         <span className="tabnum font-display text-[22px] font-bold">
-          {contentNo(p.index) ? String(contentNo(p.index)).padStart(2, "0") : "—"} <span className="opacity-50">/ 12</span>
+          {contentNo(p.index) ? String(contentNo(p.index)).padStart(2, "0") : "—"}{" "}
+          <span className="opacity-50">/ 12</span>
         </span>
         <span className="mt-1 flex gap-[5px]" aria-label={`Build ${p.step} of ${p.builds}`}>
           {Array.from({ length: p.builds }).map((_, i) => (
-            <span key={i} className={cn("h-[3px] w-[14px] transition-colors duration-300", i < p.step ? (light ? "bg-paper" : "bg-cobalt") : light ? "bg-paper/25" : "bg-rule")} />
+            <span
+              key={i}
+              className={cn(
+                "h-[3px] w-[14px] transition-colors duration-300",
+                i < p.step ? (light ? "bg-paper" : "bg-cobalt") : light ? "bg-paper/25" : "bg-rule"
+              )}
+            />
           ))}
         </span>
       </div>
-      <button type="button" className={b} onClick={p.onNext} aria-label="Next">Next →</button>
+      <button type="button" className={b} onClick={p.onNext} aria-label="Next">
+        Next →
+      </button>
     </nav>
   );
 }
 
 /* ---------------- Speaker notes ---------------- */
-
 function ProgressLine({ index, step, theme }: { index: number; step: number; theme: string }) {
   const total = SLIDES.reduce((a, s) => a + s.builds + 1, 0);
   const done = SLIDES.slice(0, index).reduce((a, s) => a + s.builds + 1, 0) + step + 1;
@@ -379,31 +561,53 @@ function ProgressLine({ index, step, theme }: { index: number; step: number; the
   if (k === "title" || index === SLIDES.length - 1) return null;
   return (
     <div className="pointer-events-none absolute left-0 right-0 top-0 z-40 h-[4px]" aria-hidden>
-      <div className={cn("h-full transition-[width] duration-500", theme === "white" ? "bg-cobalt" : "bg-paper")} style={{ width: `${(done / total) * 100}%` }} />
+      <div
+        className={cn("h-full transition-[width] duration-500", theme === "white" ? "bg-cobalt" : "bg-paper")}
+        style={{ width: `${(done / total) * 100}%` }}
+      />
     </div>
   );
 }
 
-function NotesPanel({ index, step, overlay, elapsed, onReset }: { index: number; step: number; overlay?: boolean; elapsed: number; onReset: () => void }) {
+function NotesPanel({
+  index,
+  step,
+  overlay,
+  elapsed,
+  onReset,
+}: {
+  index: number;
+  step: number;
+  overlay?: boolean;
+  elapsed: number;
+  onReset: () => void;
+}) {
   const s = SLIDES[index];
   const diff = elapsed - s.ends;
   const nx = SLIDES[index + 1];
   const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     ref.current?.querySelector("[data-active='true']")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [index, step]);
+
   return (
     <aside
       className={cn(
         "flex flex-col bg-paper text-ink",
-        overlay ? "fixed bottom-0 left-0 right-0 z-50 max-h-[34vh] border-t-2 border-ink" : "w-[400px] shrink-0 border-l border-ink/15",
+        overlay ? "fixed bottom-0 left-0 right-0 z-50 max-h-[34vh] border-t-2 border-ink" : "w-[400px] shrink-0 border-l border-ink/15"
       )}
       aria-label="Speaker notes"
     >
       <div className="flex items-baseline justify-between border-b border-rule px-6 py-4">
         <span className="flex items-baseline gap-4">
           <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-mute">Act {s.act || "—"}</span>
-          <button type="button" onClick={onReset} title="Click to restart the timer" className="focus-ring tabnum text-[12px] font-semibold uppercase tracking-[0.14em] text-ink hover:text-cobalt">
+          <button
+            type="button"
+            onClick={onReset}
+            title="Click to restart the timer"
+            className="focus-ring tabnum text-[12px] font-semibold uppercase tracking-[0.14em] text-ink hover:text-cobalt"
+          >
             ⏱ {mmss(elapsed)}
           </button>
           <span className={cn("tabnum text-[12px] font-semibold uppercase tracking-[0.14em]", diff > 15 ? "text-alert" : "text-cobalt")}>
@@ -418,7 +622,14 @@ function NotesPanel({ index, step, overlay, elapsed, onReset }: { index: number;
         <h2 className="font-display text-[22px] font-extrabold uppercase leading-tight tracking-[-0.01em]">{s.title}</h2>
         <div className="mt-4 space-y-4">
           {s.notes.map((n, i) => (
-            <p key={i} data-active={i === step} className={cn("border-l-2 pl-3 text-[15px] leading-[1.55] transition-colors", i === step ? "border-cobalt text-ink" : i < step ? "border-transparent text-mute" : "border-transparent text-ink/70")}>
+            <p
+              key={i}
+              data-active={i === step}
+              className={cn(
+                "border-l-2 pl-3 text-[15px] leading-[1.55] transition-colors",
+                i === step ? "border-cobalt text-ink" : i < step ? "border-transparent text-mute" : "border-transparent text-ink/70"
+              )}
+            >
               {n}
             </p>
           ))}
@@ -440,13 +651,22 @@ function Overview({ current, onPick, onClose }: { current: number; onPick: (i: n
       <div className="mx-auto max-w-[1680px] px-10 py-8">
         <div className="mb-8 flex items-end justify-between border-b border-ink/30 pb-4">
           <h2 className="font-display text-[44px] font-extrabold uppercase leading-none tracking-[-0.03em]">Contact sheet</h2>
-          <button type="button" onClick={onClose} className="focus-ring border-2 border-ink px-5 py-2 text-[14px] font-semibold uppercase tracking-[0.12em] hover:bg-ink hover:text-paper">
+          <button
+            type="button"
+            onClick={onClose}
+            className="focus-ring border-2 border-ink px-5 py-2 text-[14px] font-semibold uppercase tracking-[0.12em] hover:bg-ink hover:text-paper"
+          >
             Close ↗
           </button>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 xl:grid-cols-4">
           {SLIDES.map((s, i) => (
-            <button key={i} type="button" onClick={() => onPick(i)} className={cn("focus-ring group text-left", i === current && "outline outline-[3px] outline-offset-4 outline-cobalt")}>
+            <button
+              key={i}
+              type="button"
+              onClick={() => onPick(i)}
+              className={cn("focus-ring group text-left", i === current && "outline outline-[3px] outline-offset-4 outline-cobalt")}
+            >
               <StaticSlide i={i} />
               <div className="mt-2 flex items-baseline gap-3">
                 <span className="tabnum font-display text-[15px] font-bold">{contentNo(i) ? String(contentNo(i)).padStart(2, "0") : "·"}</span>
